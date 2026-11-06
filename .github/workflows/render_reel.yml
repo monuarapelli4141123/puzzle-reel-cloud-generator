@@ -1,0 +1,45 @@
+name: Render and Upload Puzzle Reel
+
+on:
+  workflow_dispatch:
+    inputs:
+      prompt_text:
+        description: 'Voiceover Script'
+        required: false
+        default: 'Can you spot the odd one out? Time is ticking! Five, four, three, two, one... Time is up! Look right there!'
+
+jobs:
+  build-and-render:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+
+      - name: Install Python Dependencies
+        run: |
+          pip install --quiet edge-tts huggingface_hub
+
+      - name: Run Reel Generator & Upload to Hugging Face
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_REPO: 'dreamersvizon/daily-reels-vault'
+          TTS_TEXT: ${{ github.event.inputs.prompt_text }}
+        run: |
+          python generate_reel.py
+
+      - name: Upload Video as Workflow Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: finished-puzzle-reel
+          path: github_actions_puzzle_reel.mp4
